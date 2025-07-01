@@ -296,6 +296,15 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
+        visited = (False, False, False, False)
+        start_pos = self.startingPosition
+        top, right = self.walls.height-2, self.walls.width-2
+        if start_pos == (1, 1): visited = (True, False, False, False)
+        elif start_pos == (1, top): visited = (False, True, False, False)
+        elif start_pos == (right, 1): visited = (False, False, True, False)
+        elif start_pos == (right, top): visited = (False, False, False, True)
+        state = (self.startingPosition, visited)
+        return state
         util.raiseNotDefined()
 
     def isGoalState(self, state: Any):
@@ -303,6 +312,8 @@ class CornersProblem(search.SearchProblem):
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
+        if state[1] == (True, True, True, True): return True
+        else: return False
         util.raiseNotDefined()
 
     def getSuccessors(self, state: Any):
@@ -326,7 +337,19 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
-
+            x,y = state[0]
+            top, right = self.walls.height-2, self.walls.width-2
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            hitsWall = self.walls[nextx][nexty]
+            if hitsWall: continue
+            else:
+                x1, x2, x3, x4 = state[1][0], state[1][1], state[1][2], state[1][3]
+                if (nextx, nexty) == (1, 1): x1 = True
+                if (nextx, nexty) == (1, top): x2 = True
+                if (nextx, nexty) == (right, 1): x3 = True
+                if (nextx, nexty) == (right, top): x4 = True
+                successors.append((((nextx, nexty), (x1, x2, x3, x4)), action, 1))
         self._expanded += 1 # DO NOT CHANGE
         return successors
 
@@ -361,6 +384,24 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
+    if problem.isGoalState(state): return 0
+    x, y = state[0]
+    top, right = problem.walls.height-2, problem.walls.width-2
+    if (walls[x][y] == False):
+        xx = state[1]
+        x1 = util.manhattanDistance((x, y), (1, 1))
+        x2 = util.manhattanDistance((x, y), (1, top))
+        x3 = util.manhattanDistance((x, y), (right, 1))
+        x4 = util.manhattanDistance((x, y), (right, top))
+        if xx[0] == True: x1 = 0
+        if xx[1] == True: x2 = 0
+        if xx[2] == True: x3 = 0
+        if xx[3] == True: x4 = 0
+        res1 = x1
+        res1 = max(res1, x2)
+        res1 = max(res1, x3)        
+        res1 = max(res1, x4)
+        return res1
     return 0 # Default to trivial solution
 
 class AStarCornersAgent(SearchAgent):
@@ -455,7 +496,25 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    if problem.isGoalState(state): return 0
+    res = 0
+    res1 = 0
+    foodlist = foodGrid.asList()
+    max_pos = (0, 0)
+    max_pos2 = (0, 0)
+    if problem.walls[position[0]][position[1]]: return 0
+    for pos in foodlist:
+        if foodGrid[pos[0]][pos[1]] == False: continue
+        res = max(res, util.manhattanDistance(pos, state[0]))
+        max_pos = pos
+    foodGrid[max_pos[0]][max_pos[1]] = False
+    for pos1 in foodlist:
+        if foodGrid[pos1[0]][pos1[1]] == False: continue
+        if pos1 == max_pos: continue
+        res1 = max(res1, util.manhattanDistance(pos1, max_pos))
+    foodGrid[max_pos[0]][max_pos[1]] = True
+    
+    return max(res, res1)
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -486,6 +545,8 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
+        return search.bfs(problem)
+
         util.raiseNotDefined()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -520,7 +581,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         complete the problem definition.
         """
         x,y = state
-
+        return self.food[x][y]
         "*** YOUR CODE HERE ***"
         util.raiseNotDefined()
 

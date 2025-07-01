@@ -99,9 +99,24 @@ def joinFactors(factors: List[Factor]):
                     "\nappear in more than one input factor.\n" + 
                     "Input factors: \n" +
                     "\n".join(map(str, factors)))
-
-
     "*** YOUR CODE HERE ***"
+    all_con_var = []
+    all_uncon_var = []
+    for factor in factors:
+        con_var = factor.conditionedVariables()
+        uncon_var = factor.unconditionedVariables()
+        all_uncon_var += uncon_var
+        all_con_var.extend([con for con in con_var if con not in all_con_var])
+
+    all_con_var = [con for con in all_con_var if con not in all_uncon_var]
+
+    newFactor = Factor(all_uncon_var, all_con_var, list(factors)[0].variableDomainsDict())
+    for assignment in newFactor.getAllPossibleAssignmentDicts():
+        pro = 1.0
+        for factor in factors:
+            pro *= factor.getProbability(assignment)
+        newFactor.setProbability(assignment, pro)
+    return newFactor
     raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
@@ -153,6 +168,21 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
+        con_var = factor.conditionedVariables()
+        uncon_var = factor.unconditionedVariables()
+        uncon_var = [uncon for uncon in uncon_var if uncon != eliminationVariable]
+
+        newFactor = Factor(uncon_var, con_var, factor.variableDomainsDict())
+        eli_domain = factor.variableDomainsDict()[eliminationVariable] # 需要删除的变量的所有可能取的值
+        for assignment in newFactor.getAllPossibleAssignmentDicts():
+            pro = 0.0
+            for eli in eli_domain: # 遍历删除变量的所有值
+                temp = assignment.copy()
+                temp[eliminationVariable] = eli # 补全删除变量的值
+                pro += factor.getProbability(temp)
+            newFactor.setProbability(assignment, pro)
+        return newFactor
+            
         raiseNotDefined()
         "*** END YOUR CODE HERE ***"
 
